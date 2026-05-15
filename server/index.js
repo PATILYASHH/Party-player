@@ -5,32 +5,45 @@ const cors = require('cors');
 
 const app = express();
 const server = createServer(app);
-// CORS configuration
-const allowedOrigins = process.env.NODE_ENV === 'production'
+
+// CORS configuration — tolerant of trailing slashes and missing env vars
+const stripSlash = (s) => (typeof s === 'string' ? s.replace(/\/$/, '') : s);
+
+const rawAllowed = process.env.NODE_ENV === 'production'
   ? [
-      process.env.NETLIFY_URL || 'https://multiplayeryt.netlify.app',
-      (process.env.NETLIFY_URL || 'https://multiplayeryt.netlify.app') + '/', // with trailing slash
-      process.env.FRONTEND_URL, // For custom domains
-      process.env.RAILWAY_STATIC_URL, // Railway provides this
-    ].filter(Boolean) // Remove any undefined values
+      process.env.FRONTEND_URL,
+      process.env.NETLIFY_URL,
+      process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`,
+    ]
   : ['http://localhost:3000'];
+
+const allowedOrigins = rawAllowed.filter(Boolean).map(stripSlash);
+
+const originCheck = (origin, cb) => {
+  // Allow same-origin / server-side / curl (no Origin header)
+  if (!origin) return cb(null, true);
+  if (allowedOrigins.includes(stripSlash(origin))) return cb(null, true);
+  console.warn(`CORS blocked origin: ${origin}. Allowed: ${allowedOrigins.join(', ')}`);
+  return cb(new Error(`Origin ${origin} not allowed by CORS`));
+};
 
 console.log('Environment:', process.env.NODE_ENV);
 console.log('Allowed origins:', allowedOrigins);
 
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
-    methods: ["GET", "POST"]
-  }
+    origin: originCheck,
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
 });
 
 // Middleware
 app.use(cors({
-  origin: allowedOrigins,
+  origin: originCheck,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  credentials: true,
 }));
 app.use(express.json());
 

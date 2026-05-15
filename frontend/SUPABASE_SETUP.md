@@ -1,7 +1,7 @@
 # Setting Up Supabase Database for Party Player
 
 ## Step 1: Run Database Schema
-1. Go to your Supabase project dashboard: https://yvfosycqynpccrrgjyeu.supabase.co
+1. Go to your Supabase project dashboard (the URL is set in your `NEXT_PUBLIC_SUPABASE_URL` env var)
 2. Navigate to SQL Editor
 3. Copy and paste the contents of `../supabase/supabase-schema.sql` into the SQL Editor
 4. Click "Run" to execute the SQL commands
